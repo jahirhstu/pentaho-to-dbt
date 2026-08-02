@@ -1,0 +1,59 @@
+name: pentaho_to_databricks
+version: 1.0.0
+config-version: 2
+
+profile: pentaho_to_databricks
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - target
+  - dbt_packages
+
+models:
+  pentaho_to_databricks:
+    +persist_docs:
+      relation: true
+      columns: true
+
+    shared:
+      +tags: ["shared"]
+      staging:
+        +materialized: view
+        +schema: staging
+      intermediate:
+        +materialized: view
+        +schema: intermediate
+
+    pentaho_project_1:
+      +tags: ["pentaho_project_1"]
+      staging:
+        +materialized: view
+        +schema: staging
+      intermediate:
+        +materialized: view
+        +schema: intermediate
+      marts:
+        +materialized: table
+        +schema: marts
+
+    pentaho_project_2:
+      +tags: ["pentaho_project_2"]
+    pentaho_project_3:
+      +tags: ["pentaho_project_3"]
+    pentaho_project_4:
+      +tags: ["pentaho_project_4"]
+    pentaho_project_5:
+      +tags: ["pentaho_project_5"]
+    pentaho_project_6:
+      +tags: ["pentaho_project_6"]
+
+seeds:
+  pentaho_to_databricks:
+    +schema: raw
+

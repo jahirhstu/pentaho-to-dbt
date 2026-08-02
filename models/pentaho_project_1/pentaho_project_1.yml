@@ -1,0 +1,32 @@
+version: 2
+
+models:
+  - name: stg_sales_source
+    description: Clean Databricks representation of the SQL Server sales source.
+
+  - name: stg_customer_source
+    description: Clean Databricks representation of the SQL Server customer source.
+
+  - name: stg_product_source
+    description: Clean Databricks representation of the SQL Server product source.
+
+  - name: int_sales_customer_status
+    description: Sales enriched with customer details and a missing-customer flag.
+
+  - name: park_sales_missing_customer
+    description: >
+      Stateful exception model retaining sales first seen without a matching customer
+      and recording when the customer becomes available.
+
+  - name: stg_customer_sales
+    description: Valid sales enriched with customer attributes and calculated amount.
+
+  - name: stg_product_sales
+    description: Valid-customer sales enriched with product attributes.
+
+  - name: rpt_customer_sales_summary
+    description: Current lifetime sales summary by customer.
+
+  - name: rpt_product_sales_summary
+    description: Current lifetime sales summary by product.
+

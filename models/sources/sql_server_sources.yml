@@ -1,0 +1,146 @@
+version: 2
+
+sources:
+  - name: sql_server_dim
+    description: >
+      Tables originating from the SQL Server dim schema and loaded into Databricks.
+    catalog: "{{ target.catalog }}"
+    schema: dim
+    tables:
+      - name: sales_source
+        description: Sales source rows generated and updated by usp_generate_source_data.
+        columns:
+          - name: sales_id
+            description: Unique identifier for a source sales row.
+            data_tests:
+              - not_null
+              - unique
+          - name: order_number
+            description: Business-facing order number.
+            data_tests: [not_null]
+          - name: customer_id
+            description: Customer associated with the sale.
+            data_tests: [not_null]
+          - name: product_id
+            description: Product associated with the sale.
+            data_tests: [not_null]
+          - name: store_id
+            description: Store associated with the sale.
+            data_tests: [not_null]
+          - name: sales_date
+            description: Calendar date of the sale.
+            data_tests: [not_null]
+          - name: quantity
+            description: Number of product units sold.
+            data_tests: [not_null]
+          - name: unit_price
+            description: Unit price recorded for the sale.
+            data_tests: [not_null]
+          - name: discount_amount
+            description: Discount applied to the sale.
+            data_tests: [not_null]
+          - name: source_updated_at
+            description: Timestamp used to identify new or changed source rows.
+            data_tests: [not_null]
+
+      - name: dim_customer_source
+        description: Customer source rows, including customers recovered from parking.
+        columns:
+          - name: customer_id
+            description: Unique identifier for a source customer.
+            data_tests:
+              - not_null
+              - unique
+          - name: customer_code
+            description: Business-facing customer code.
+            data_tests: [not_null]
+          - name: first_name
+            description: Customer first name.
+            data_tests: [not_null]
+          - name: last_name
+            description: Customer last name.
+            data_tests: [not_null]
+          - name: email
+            description: Customer email address.
+            data_tests: [not_null]
+          - name: region_id
+            description: Region associated with the customer.
+            data_tests: [not_null]
+          - name: is_active
+            description: Whether the customer is active in the source system.
+            data_tests: [not_null]
+          - name: source_updated_at
+            description: Timestamp of the latest source-system change.
+            data_tests: [not_null]
+
+      - name: dim_product_source
+        description: Product lookup used to enrich sales with product attributes.
+        columns:
+          - name: product_id
+            description: Unique identifier for a source product.
+            data_tests:
+              - not_null
+              - unique
+          - name: product_code
+            description: Business-facing product code.
+            data_tests: [not_null]
+          - name: product_name
+            description: Product display name.
+            data_tests: [not_null]
+          - name: category
+            description: Product category.
+            data_tests: [not_null]
+          - name: unit_price
+            description: Current unit price in the product source.
+            data_tests: [not_null]
+          - name: is_active
+            description: Whether the product is active in the source system.
+            data_tests: [not_null]
+          - name: source_updated_at
+            description: Timestamp of the latest source-system change.
+            data_tests: [not_null]
+
+      - name: dim_region_source
+        description: Region lookup available for customer and store enrichment.
+        columns:
+          - name: region_id
+            description: Unique identifier for a source region.
+            data_tests:
+              - not_null
+              - unique
+          - name: region_code
+            description: Business-facing region code.
+            data_tests: [not_null]
+          - name: region_name
+            description: Region display name.
+            data_tests: [not_null]
+          - name: country_name
+            description: Country containing the region.
+            data_tests: [not_null]
+          - name: source_updated_at
+            description: Timestamp of the latest source-system change.
+            data_tests: [not_null]
+
+      - name: dim_store_source
+        description: Store lookup available for sales and region enrichment.
+        columns:
+          - name: store_id
+            description: Unique identifier for a source store.
+            data_tests:
+              - not_null
+              - unique
+          - name: store_code
+            description: Business-facing store code.
+            data_tests: [not_null]
+          - name: store_name
+            description: Store display name.
+            data_tests: [not_null]
+          - name: region_id
+            description: Region associated with the store.
+            data_tests: [not_null]
+          - name: is_active
+            description: Whether the store is active in the source system.
+            data_tests: [not_null]
+          - name: source_updated_at
+            description: Timestamp of the latest source-system change.
+            data_tests: [not_null]

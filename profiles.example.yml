@@ -1,0 +1,14 @@
+# Copy this file to ~/.dbt/profiles.yml after creating your Databricks account.
+# Never commit a real access token.
+pentaho_to_databricks:
+  target: dev
+  outputs:
+    dev:
+      type: databricks
+      catalog: workspace
+      schema: dbt_dev
+      host: "{{ env_var('DATABRICKS_HOST') }}"
+      http_path: "{{ env_var('DATABRICKS_HTTP_PATH') }}"
+      token: "{{ env_var('DATABRICKS_TOKEN') }}"
+      threads: 4
+

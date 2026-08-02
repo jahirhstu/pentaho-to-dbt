@@ -1,0 +1,3 @@
+# Pin versions before a shared or production deployment.
+dbt-databricks
+

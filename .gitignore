@@ -1,0 +1,13 @@
+.DS_Store
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+target/
+logs/
+dbt_packages/
+profiles.yml
+*.duckdb
+
+dbt_internal_packages/

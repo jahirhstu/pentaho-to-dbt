@@ -1,0 +1,19 @@
+Pentaho-to-dbt migration progress
+Last updated: 2026-07-25
+
+| Step | Status | Notes |
+|---|---|---|
+| 1. Create the local dbt project | Done | Project configuration, Databricks profile template, documentation, and standard dbt folders exist. |
+| 2. Add folders for 5–6 Pentaho projects | Done | Six project areas exist; Project 1 is the active conversion example. |
+| 3. Analyze the KJB and KTR | Done | The user confirmed that the files contain no transformation logic and only invoke the stored procedures. The files are not required for this example. |
+| 4. Analyze `etl.usp_generate_source_data` | Done | It is a stateful test-data generator and should become a separate Databricks setup/workflow task, not a normal dbt model. |
+| 5. Add the first source definitions and tests | Done | `dim.sales_source`, `dim.dim_customer_source`, and `parking.park_sales_missing_customer` are declared with basic key tests. |
+| 6. Analyze `etl.usp_run_incremental_sales_etl` | Done | The transformation, incremental watermark, parking flow, staging merges, reporting aggregates, and audit behavior are documented in `migration_guide.md`. |
+| 7. Add the remaining source definitions | Done | Declared all five `dim` source tables from the supplied DDL. `etl.etl_run_control` is replaced by dbt/Databricks execution metadata. |
+| 8. Convert the transformation procedure into dbt models | Done locally | Added nine models for source cleanup, customer validation, parking, customer/product enrichment, and reporting. Removed the scaffold models and transitional parking source. `dbt parse` succeeds; execution awaits Databricks. |
+| 9. Add model tests | Next | Add uniqueness, not-null, relationship, accepted-value, and business-rule tests. |
+| 10. Create a Databricks Free Edition account | Not started | Create it after the first conversion models and sample-data design are ready. |
+| 11. Create schemas and upload anonymized sample data | Not started | Requires the Databricks account. |
+| 12. Configure the Databricks connection | Template only | `profiles.example.yml` exists; real host, warehouse path, and credentials are not configured. |
+| 13. Run `dbt debug` and `dbt build` | Not started | Local `dbt parse` succeeds; database execution requires Databricks. |
+| 14. Compare dbt output with Pentaho | Not started | Run both implementations against the same source snapshot and compare results. |
