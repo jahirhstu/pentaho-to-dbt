@@ -24,5 +24,4 @@ select
 from {{ ref('int_sales_customer_status') }} as s
 inner join {{ ref('stg_product_source') }} as p
     on s.product_id = p.product_id
-where not s.is_missing_customer
-
+where not s.is_missing_customer and not s.is_missing_product

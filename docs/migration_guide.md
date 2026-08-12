@@ -125,6 +125,18 @@ The reporting models omit `etl_run_id` and `created_at`. They retain `updated_at
 This is an intentional metadata difference that must be considered when comparing
 the dbt and Pentaho outputs.
 
+## Step 9 model tests
+
+Project 1 now tests primary model keys for uniqueness and required columns for
+nulls. Relationship tests validate customer, product, store, region, and sales
+references. Accepted-value tests constrain boolean status columns and the parking
+rejection reason.
+
+Singular business-rule tests reject invalid sales amounts, enforce consistent
+parking resolution timestamps, and compare both reporting marts with fresh
+aggregations of their staging models. These tests can be parsed locally; executing
+them requires the Databricks connection created in later steps.
+
 ## Inventory one pipeline
 
 Collect the `.kjb`, every referenced `.ktr`, stored-procedure definitions, table/view

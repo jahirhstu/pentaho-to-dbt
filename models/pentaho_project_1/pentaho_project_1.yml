@@ -3,30 +3,288 @@ version: 2
 models:
   - name: stg_sales_source
     description: Clean Databricks representation of the SQL Server sales source.
+    columns:
+      - name: sales_id
+        data_tests: [not_null, unique]
+      - name: order_number
+        data_tests: [not_null]
+      - name: customer_id
+        data_tests: [not_null]
+      - name: product_id
+        data_tests: [not_null]
+      - name: store_id
+        data_tests: [not_null]
+      - name: sales_date
+        data_tests: [not_null]
+      - name: quantity
+        data_tests: [not_null]
+      - name: unit_price
+        data_tests: [not_null]
+      - name: discount_amount
+        data_tests: [not_null]
+      - name: source_updated_at
+        data_tests: [not_null]
 
   - name: stg_customer_source
     description: Clean Databricks representation of the SQL Server customer source.
+    columns:
+      - name: customer_id
+        data_tests: [not_null, unique]
+      - name: customer_code
+        data_tests: [not_null, unique]
+      - name: first_name
+        data_tests: [not_null]
+      - name: last_name
+        data_tests: [not_null]
+      - name: email
+        data_tests: [not_null]
+      - name: region_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: source('sql_server_dim', 'dim_region_source')
+                field: region_id
+      - name: is_active
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [true, false]
+      - name: source_updated_at
+        data_tests: [not_null]
 
   - name: stg_product_source
     description: Clean Databricks representation of the SQL Server product source.
+    columns:
+      - name: product_id
+        data_tests: [not_null, unique]
+      - name: product_code
+        data_tests: [not_null, unique]
+      - name: product_name
+        data_tests: [not_null]
+      - name: category
+        data_tests: [not_null]
+      - name: unit_price
+        data_tests: [not_null]
+      - name: is_active
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [true, false]
+      - name: source_updated_at
+        data_tests: [not_null]
 
   - name: int_sales_customer_status
     description: Sales enriched with customer details and a missing-customer flag.
+    columns:
+      - name: sales_id
+        data_tests:
+          - not_null
+          - unique
+          - relationships:
+              arguments:
+                to: ref('stg_sales_source')
+                field: sales_id
+      - name: is_missing_customer
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [true, false]
+      - name: is_missing_product
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [true, false]
 
   - name: park_sales_missing_customer
     description: >
       Stateful exception model retaining sales first seen without a matching customer
       and recording when the customer becomes available.
+    columns:
+      - name: sales_id
+        data_tests:
+          - not_null
+          - unique
+          - relationships:
+              arguments:
+                to: ref('stg_sales_source')
+                field: sales_id
+      - name: rejection_reason
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Missing customer_id in dim.dim_customer_source']
+      - name: parked_at
+        data_tests: [not_null]
+      - name: is_resolved
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [true, false]
+
+  - name: park_sales_missing_product
+    description: >
+      Stateful exception model retaining sales first seen without a matching product
+      and recording when the product becomes available.
+    columns:
+      - name: sales_id
+        data_tests:
+          - not_null
+          - unique
+          - relationships:
+              arguments:
+                to: ref('stg_sales_source')
+                field: sales_id
+      - name: rejection_reason
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Missing product_id in dim.dim_product_source']
+      - name: parked_at
+        data_tests: [not_null]
+      - name: is_resolved
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [true, false]
 
   - name: stg_customer_sales
     description: Valid sales enriched with customer attributes and calculated amount.
+    columns:
+      - name: sales_id
+        data_tests:
+          - not_null
+          - unique
+          - relationships:
+              arguments:
+                to: ref('stg_sales_source')
+                field: sales_id
+      - name: customer_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_customer_source')
+                field: customer_id
+      - name: customer_name
+        data_tests: [not_null]
+      - name: customer_email
+        data_tests: [not_null]
+      - name: region_id
+        data_tests: [not_null]
+      - name: sales_date
+        data_tests: [not_null]
+      - name: quantity
+        data_tests: [not_null]
+      - name: sales_amount
+        data_tests: [not_null]
+      - name: source_updated_at
+        data_tests: [not_null]
+      - name: loaded_at
+        data_tests: [not_null]
 
   - name: stg_product_sales
     description: Valid-customer sales enriched with product attributes.
+    columns:
+      - name: sales_id
+        data_tests:
+          - not_null
+          - unique
+          - relationships:
+              arguments:
+                to: ref('stg_customer_sales')
+                field: sales_id
+      - name: product_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_product_source')
+                field: product_id
+      - name: product_name
+        data_tests: [not_null]
+      - name: category
+        data_tests: [not_null]
+      - name: store_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: source('sql_server_dim', 'dim_store_source')
+                field: store_id
+      - name: sales_date
+        data_tests: [not_null]
+      - name: quantity
+        data_tests: [not_null]
+      - name: sales_amount
+        data_tests: [not_null]
+      - name: source_updated_at
+        data_tests: [not_null]
+      - name: loaded_at
+        data_tests: [not_null]
 
   - name: rpt_customer_sales_summary
     description: Current lifetime sales summary by customer.
+    columns:
+      - name: customer_id
+        data_tests:
+          - not_null
+          - unique
+          - relationships:
+              arguments:
+                to: ref('stg_customer_source')
+                field: customer_id
+      - name: customer_name
+        data_tests: [not_null]
+      - name: customer_email
+        data_tests: [not_null]
+      - name: region_id
+        data_tests: [not_null]
+      - name: total_orders
+        data_tests: [not_null]
+      - name: total_quantity
+        data_tests: [not_null]
+      - name: total_sales_amount
+        data_tests: [not_null]
+      - name: first_sale_date
+        data_tests: [not_null]
+      - name: last_sale_date
+        data_tests: [not_null]
+      - name: updated_at
+        data_tests: [not_null]
 
   - name: rpt_product_sales_summary
     description: Current lifetime sales summary by product.
-
+    columns:
+      - name: product_id
+        data_tests:
+          - not_null
+          - unique
+          - relationships:
+              arguments:
+                to: ref('stg_product_source')
+                field: product_id
+      - name: product_name
+        data_tests: [not_null]
+      - name: category
+        data_tests: [not_null]
+      - name: total_orders
+        data_tests: [not_null]
+      - name: total_quantity
+        data_tests: [not_null]
+      - name: total_sales_amount
+        data_tests: [not_null]
+      - name: first_sale_date
+        data_tests: [not_null]
+      - name: last_sale_date
+        data_tests: [not_null]
+      - name: updated_at
+        data_tests: [not_null]

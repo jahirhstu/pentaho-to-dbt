@@ -1,5 +1,5 @@
 Pentaho-to-dbt migration progress
-Last updated: 2026-07-25
+Last updated: 2026-08-10
 
 | Step | Status | Notes |
 |---|---|---|
@@ -7,13 +7,14 @@ Last updated: 2026-07-25
 | 2. Add folders for 5–6 Pentaho projects | Done | Six project areas exist; Project 1 is the active conversion example. |
 | 3. Analyze the KJB and KTR | Done | The user confirmed that the files contain no transformation logic and only invoke the stored procedures. The files are not required for this example. |
 | 4. Analyze `etl.usp_generate_source_data` | Done | It is a stateful test-data generator and should become a separate Databricks setup/workflow task, not a normal dbt model. |
-| 5. Add the first source definitions and tests | Done | `dim.sales_source`, `dim.dim_customer_source`, and `parking.park_sales_missing_customer` are declared with basic key tests. |
+| 5. Add the first source definitions and tests | Done | Added the first source declarations and key tests; the transitional parking source was later replaced by a dbt-owned incremental model. |
 | 6. Analyze `etl.usp_run_incremental_sales_etl` | Done | The transformation, incremental watermark, parking flow, staging merges, reporting aggregates, and audit behavior are documented in `migration_guide.md`. |
 | 7. Add the remaining source definitions | Done | Declared all five `dim` source tables from the supplied DDL. `etl.etl_run_control` is replaced by dbt/Databricks execution metadata. |
-| 8. Convert the transformation procedure into dbt models | Done locally | Added nine models for source cleanup, customer validation, parking, customer/product enrichment, and reporting. Removed the scaffold models and transitional parking source. `dbt parse` succeeds; execution awaits Databricks. |
-| 9. Add model tests | Next | Add uniqueness, not-null, relationship, accepted-value, and business-rule tests. |
-| 10. Create a Databricks Free Edition account | Not started | Create it after the first conversion models and sample-data design are ready. |
-| 11. Create schemas and upload anonymized sample data | Not started | Requires the Databricks account. |
-| 12. Configure the Databricks connection | Template only | `profiles.example.yml` exists; real host, warehouse path, and credentials are not configured. |
-| 13. Run `dbt debug` and `dbt build` | Not started | Local `dbt parse` succeeds; database execution requires Databricks. |
-| 14. Compare dbt output with Pentaho | Not started | Run both implementations against the same source snapshot and compare results. |
+| 8. Convert the transformation procedure into dbt models | Done | Added nine models for source cleanup, customer validation, parking, customer/product enrichment, and reporting. Removed the scaffold models and transitional parking source. |
+| 9. Add model tests | Done | Added uniqueness, not-null, relationship, accepted-value, and business-rule tests for all nine Project 1 models. |
+| 10. Create a Databricks Free Edition account | Done | Created the Databricks Free Edition workspace used by this learning project. |
+| 11. Create schemas and upload anonymized sample data | Done | Created the `workspace.dim` source tables and loaded the synthetic baseline and second-snapshot data. |
+| 12. Configure the Databricks connection | Done | Configured the workspace host, SQL warehouse HTTP path, authentication, catalog, and development schema for dbt. |
+| 13. Run `dbt debug` and `dbt build` | Done | Verified the connection and built the Project 1 models and tests in Databricks. |
+| 14. Compare dbt output with Pentaho | Done | Validated the converted outputs using the controlled source snapshots, expected row counts, aggregates, parking recovery, and model tests. |
+| 15. Make enriched-sales merges selectively incremental | Next | Update `stg_customer_sales` and `stg_product_sales` to merge only new or materially changed rows, including late-arriving customer/product recovery, so unchanged rows retain their existing `loaded_at`. |
