@@ -110,9 +110,18 @@ sales_amount = (quantity * unit_price) - discount_amount
 ```
 
 `stg_product_sales` reproduces the product enrichment. Both are incremental Delta
-models using dbt's `merge` strategy and `sales_id` as the unique key. For this first
-learning version, they read the full current valid input on each run; dbt merges
-matching rows instead of issuing hand-written `UPDATE` and `INSERT` statements.
+models using dbt's `merge` strategy and `sales_id` as the unique key. Full-refresh
+runs rebuild the complete valid result. Incremental runs use workflow-supplied,
+source-specific watermark windows to identify sales changed directly, sales affected
+by customer or product changes, and parked sales recovered by late-arriving lookups.
+Only those affected sales enter the merge, so unchanged rows retain `loaded_at`.
+
+The incremental window is bounded as `start < source_updated_at <= end` separately
+for sales, customers, and products. The orchestrator must persist each end watermark
+only after the complete dbt build succeeds, then use it as the next start watermark.
+This design intentionally does not compare calculated rows with the target and does
+not use row hashes. Consequently, any source row whose timestamp moves inside the
+window is treated as affected even when its selected business values are unchanged.
 
 ### Reporting marts
 

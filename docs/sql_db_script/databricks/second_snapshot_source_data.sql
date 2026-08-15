@@ -197,4 +197,11 @@ ORDER BY sales_id;
 -- After the verification queries succeed, preserve the parking history by using
 -- the normal incremental command. Do not use --full-refresh for this snapshot:
 --
--- dbt build --select pentaho_project_1
+-- dbt build --select pentaho_project_1 --vars '{
+--   "sales_watermark_start": "2026-07-06 09:00:00",
+--   "sales_watermark_end": "2026-07-07 09:10:00",
+--   "customer_watermark_start": "2026-07-01 08:22:00",
+--   "customer_watermark_end": "2026-07-07 08:00:00",
+--   "product_watermark_start": "2026-07-01 08:31:00",
+--   "product_watermark_end": "2026-07-07 08:30:00"
+-- }'

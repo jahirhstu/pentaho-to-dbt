@@ -171,8 +171,19 @@ history, so do not use it for the normal second-snapshot recovery test.
 For the recovery snapshot, use the ordinary incremental build:
 
 ```bash
-dbt build --select pentaho_project_1
+dbt build --select pentaho_project_1 --vars '{
+  "sales_watermark_start": "2026-07-06 09:00:00",
+  "sales_watermark_end": "2026-07-07 09:10:00",
+  "customer_watermark_start": "2026-07-01 08:22:00",
+  "customer_watermark_end": "2026-07-07 08:00:00",
+  "product_watermark_start": "2026-07-01 08:31:00",
+  "product_watermark_end": "2026-07-07 08:30:00"
+}'
 ```
+
+Incremental Project 1 builds require all six watermark variables. Each window uses
+`start < source_updated_at <= end`. In production, the Databricks workflow should
+supply and persist these values only after a successful build.
 
 ## Execute tests
 
@@ -266,7 +277,14 @@ dbt build --select pentaho_project_1
 Second sample-data snapshot, preserving incremental and parking history:
 
 ```bash
-dbt build --select pentaho_project_1
+dbt build --select pentaho_project_1 --vars '{
+  "sales_watermark_start": "2026-07-06 09:00:00",
+  "sales_watermark_end": "2026-07-07 09:10:00",
+  "customer_watermark_start": "2026-07-01 08:22:00",
+  "customer_watermark_end": "2026-07-07 08:00:00",
+  "product_watermark_start": "2026-07-01 08:31:00",
+  "product_watermark_end": "2026-07-07 08:30:00"
+}'
 ```
 
 Test investigation:
