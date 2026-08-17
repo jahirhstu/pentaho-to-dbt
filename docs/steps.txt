@@ -1,5 +1,5 @@
 Pentaho-to-dbt migration progress
-Last updated: 2026-08-15
+Last updated: 2026-08-17
 
 | Step | Status | Notes |
 |---|---|---|
@@ -18,4 +18,22 @@ Last updated: 2026-08-15
 | 13. Run `dbt debug` and `dbt build` | Done | Verified the connection and built the Project 1 models and tests in Databricks. |
 | 14. Compare dbt output with Pentaho | Done | Validated the converted outputs using the controlled source snapshots, expected row counts, aggregates, parking recovery, and model tests. |
 | 15. Make enriched-sales merges selectively incremental | Done locally | Added source-specific bounded watermark windows and affected-sales selection for direct sales changes, lookup changes, and late-arriving customer/product recovery. Incremental execution requires six workflow-supplied watermark variables; unchanged sales are excluded so their `loaded_at` is preserved. |
-| 16. Orchestrate incremental execution with a Databricks Workflow | Next | Create durable source-watermark state and a Databricks Workflow that reads the last successful watermarks, captures fixed source end watermarks, passes all six values to `dbt build`, and advances the control table only after the complete build and tests succeed. Define retry behavior so failed runs preserve and reuse the uncommitted window. |
+| 16. Orchestrate incremental execution with a Databricks Workflow | In progress | Implement the ordered substeps below. The job-compatible dbt profile is complete locally; the Git, control-table, notebook, workflow, retry, and validation work remains. |
+
+Step 16 implementation progress
+
+| Substep | Status | Notes |
+|---|---|---|
+| 16.1. Push the workflow-ready dbt project | Done | Commit and push the Step 15 models, tests, documentation, and job profile so the Databricks dbt task can run an immutable Git branch or revision. Exclude local editor and vault files. |
+| 16.2. Add a job-compatible dbt profile | Done locally | Kept `dev` as the local default and added a `job` output using the workspace SQL warehouse and Databricks-injected `DBT_ACCESS_TOKEN`. Workflow commands must include `--target job`. The profile contains no token literal. |
+| 16.3. Create and bootstrap the watermark control table | Done | Create `workspace.etl.dbt_source_watermarks` with one row each for sales, customer, and product. Because the current targets already contain processed data, bootstrap the rows to the validated source maxima or perform a controlled full refresh before setting them. |
+| 16.4. Create the `prepare_watermarks` notebook | Not started | Read the three previous successful watermarks, capture fixed maximum `source_updated_at` values for the three sources, use the start when a source is empty, and publish all six UTC timestamp strings with `dbutils.jobs.taskValues.set`. |
+| 16.5. Create the Databricks Workflow | Not started | Create `pentaho_project_1_incremental` in Jobs & Pipelines, select the intended Run-as identity, and use serverless resources compatible with Free Edition. |
+| 16.6. Configure the `prepare_watermarks` task | Not started | Add the preparation notebook as the first serverless task with no dependencies. Confirm its run output contains the six expected task values. |
+| 16.7. Configure the `dbt_build` task | Not started | Add a Git-backed dbt task depending on `prepare_watermarks`; pin the dbt-databricks version and pass the six dynamic task values through `--vars` to `dbt build --target job --select pentaho_project_1`. This command runs the models and tests. |
+| 16.8. Create the `advance_watermarks` notebook | Not started | Accept the captured task values as notebook parameters and merge the exact three end watermarks into the control table. Do not recalculate source maxima in this notebook. |
+| 16.9. Configure the `advance_watermarks` task | Not started | Add the advancement notebook after `dbt_build` with the dependency condition `All succeeded`, ensuring a model or test failure cannot advance source state. |
+| 16.10. Configure retry behavior | Not started | Add limited automatic retries to `dbt_build`. For manual recovery, use Repair run and rerun the failed dbt task plus downstream tasks without rerunning `prepare_watermarks`, preserving the original bounded window. |
+| 16.11. Verify a successful workflow run | Not started | Compare preparation task values with the control table after success, inspect dbt artifacts and test results, and confirm unchanged enriched-sales rows retain their previous `loaded_at`. |
+| 16.12. Verify failure safety | Not started | Cause a controlled failure on a disposable branch and confirm `prepare_watermarks` succeeds, `dbt_build` fails, `advance_watermarks` is skipped, and the control table remains unchanged. Repair the run afterward. |
+| 16.13. Add the production trigger | Not started | After manual success and failure validation, add the required schedule or data trigger, set the timezone explicitly, prevent overlapping runs, and configure notifications if available. Manual execution is sufficient during development. |
