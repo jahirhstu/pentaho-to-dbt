@@ -1,5 +1,4 @@
-# Copy this file to profiles.yml or ~/.dbt/profiles.yml and replace the job
-# connection placeholders. Never put a token literal in either output.
+# Shared local and Databricks Workflow profile. Never put a token literal here.
 pentaho_to_databricks:
   target: dev
   outputs:
@@ -17,7 +16,7 @@ pentaho_to_databricks:
       method: http
       catalog: workspace
       schema: dbt_dev
-      host: your-workspace-host
-      http_path: /sql/1.0/warehouses/your-warehouse-id
+      host: dbc-6a1c9cc6-e36f.cloud.databricks.com
+      http_path: /sql/1.0/warehouses/75e2e734a3527ecb
       token: "{{ env_var('DBT_ACCESS_TOKEN') }}"
       threads: 4
