@@ -1,5 +1,5 @@
 Pentaho-to-dbt migration progress
-Last updated: 2026-08-17
+Last updated: 2026-08-19
 
 | Step | Status | Notes |
 |---|---|---|
@@ -27,7 +27,7 @@ Step 16 implementation progress
 | 16.1. Push the workflow-ready dbt project | Done | Commit and push the Step 15 models, tests, documentation, and job profile so the Databricks dbt task can run an immutable Git branch or revision. Exclude local editor and vault files. |
 | 16.2. Add a job-compatible dbt profile | Done locally | Kept `dev` as the local default and added a `job` output using the workspace SQL warehouse and Databricks-injected `DBT_ACCESS_TOKEN`. Workflow commands must include `--target job`. The profile contains no token literal. |
 | 16.3. Create and bootstrap the watermark control table | Done | Create `workspace.etl.dbt_source_watermarks` with one row each for sales, customer, and product. Because the current targets already contain processed data, bootstrap the rows to the validated source maxima or perform a controlled full refresh before setting them. |
-| 16.4. Create the `prepare_watermarks` notebook | Not started | Read the three previous successful watermarks, capture fixed maximum `source_updated_at` values for the three sources, use the start when a source is empty, and publish all six UTC timestamp strings with `dbutils.jobs.taskValues.set`. |
+| 16.4. Create the `prepare_watermarks` notebook | Done locally | Added `databricks/notebooks/prepare_watermarks.py`. It validates the three control rows, captures fixed maximum source timestamps in UTC, rejects backward windows, uses the start for an empty source, publishes all six values with `dbutils.jobs.taskValues.set`, and displays the captured window for the task run. |
 | 16.5. Create the Databricks Workflow | Not started | Create `pentaho_project_1_incremental` in Jobs & Pipelines, select the intended Run-as identity, and use serverless resources compatible with Free Edition. |
 | 16.6. Configure the `prepare_watermarks` task | Not started | Add the preparation notebook as the first serverless task with no dependencies. Confirm its run output contains the six expected task values. |
 | 16.7. Configure the `dbt_build` task | Not started | Add a Git-backed dbt task depending on `prepare_watermarks`; pin the dbt-databricks version and pass the six dynamic task values through `--vars` to `dbt build --target job --select pentaho_project_1`. This command runs the models and tests. |
