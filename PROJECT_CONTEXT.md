@@ -550,9 +550,10 @@ There are no TypeScript, component, API, UI styling, tenant, or role conventions
 
 1. **Implement Step 16.8:** add `databricks/notebooks/advance_watermarks.py`. It should accept pipeline plus captured start/end values, validate three existing control rows, reject malformed/backward/stale state, merge the exact three ends, and verify the result. It must not query source maxima.
 2. **Implement Step 16.9:** configure `advance_watermarks` after `dbt_build` with `ALL_SUCCESS`, passing the original task values from `prepare_watermarks`.
-3. **Implement Step 16.10:** add limited dbt retries and document Repair run selection so preparation is not rerun during repair.
-4. **Verify Step 16.11:** run the complete workflow, compare task ends to committed control values, inspect dbt artifacts/tests, and prove unchanged enriched rows retain `loaded_at`.
-5. **Verify Step 16.12:** controlled failure on a disposable branch; confirm advancement is skipped and control values remain unchanged; repair with the original window.
+3. **Complete Step 16.10:** review and understand both watermark notebooks line by line, including their shared data contract and safety checks.
+4. **Implement Step 16.11:** add limited dbt retries and document Repair run selection so preparation is not rerun during repair.
+5. **Verify Step 16.12:** run the complete workflow, compare task ends to committed control values, inspect dbt artifacts/tests, and prove unchanged enriched rows retain `loaded_at`.
+6. **Verify Step 16.13:** controlled failure on a disposable branch; confirm advancement is skipped and control values remain unchanged; repair with the original window.
 
 ### Medium Priority
 
@@ -589,7 +590,7 @@ There are no TypeScript, component, API, UI styling, tenant, or role conventions
 - **Symptom:** Every enriched row showed the same new `loaded_at` after an incremental execution.
 - **Root cause:** Earlier model logic fed the complete valid dataset to the merge, so all matched rows were updated.
 - **Resolution:** Step 15 added affected-sales selection based on sales/customer/product windows and recovery sets. No target comparison or row hash was added by explicit decision.
-- **Status:** Resolved in model code; full workflow validation remains Step 16.11.
+- **Status:** Resolved in model code; full workflow validation remains Step 16.12.
 
 ### `SELECT *` did not visibly show sale 5007, but filtered query did
 
@@ -763,10 +764,11 @@ Recommended contract:
 ### Then continue in this order
 
 1. Step 16.9: add the notebook after `dbt_build` with `ALL_SUCCESS` and dynamic values from `prepare_watermarks`.
-2. Step 16.10: configure limited retries and repair-run behavior.
-3. Step 16.11: validate a successful full run, including `loaded_at` preservation.
-4. Step 16.12: validate controlled failure and repair without advancement.
-5. Step 16.13: add production trigger, timezone, concurrency limit, and notifications.
+2. Step 16.10: review and understand the complete Python implementation of both watermark notebooks.
+3. Step 16.11: configure limited retries and repair-run behavior.
+4. Step 16.12: validate a successful full run, including `loaded_at` preservation.
+5. Step 16.13: validate controlled failure and repair without advancement.
+6. Step 16.14: add production trigger, timezone, concurrency limit, and notifications.
 6. Only then evaluate Step 17 and implement Step 18.
 
 ## 18. Context That Exists Only in Our Conversation

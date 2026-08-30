@@ -1,5 +1,5 @@
 Pentaho-to-dbt migration progress
-Last updated: 2026-08-29
+Last updated: 2026-08-30
 
 | Step | Status | Notes |
 |---|---|---|
@@ -35,10 +35,11 @@ Step 16 implementation progress
 | 16.7. Configure the `dbt_build` task | Done | Added the Git-backed serverless dbt task after `prepare_watermarks`, pinned `dbt-databricks==1.12.4`, selected serverless environment version 2, and passed all six dynamic task values through `--vars`. The command uses `--profiles-dir . --target job` so the Git checkout's job profile overrides the Databricks-generated profile. Verification run `721943511175993` completed successfully for both tasks. |
 | 16.8. Create the `advance_watermarks` notebook | Not started | Accept the captured task values as notebook parameters and merge the exact three end watermarks into the control table. Do not recalculate source maxima in this notebook. |
 | 16.9. Configure the `advance_watermarks` task | Not started | Add the advancement notebook after `dbt_build` with the dependency condition `All succeeded`, ensuring a model or test failure cannot advance source state. |
-| 16.10. Configure retry behavior | Not started | Add limited automatic retries to `dbt_build`. For manual recovery, use Repair run and rerun the failed dbt task plus downstream tasks without rerunning `prepare_watermarks`, preserving the original bounded window. |
-| 16.11. Verify a successful workflow run | Not started | Compare preparation task values with the control table after success, inspect dbt artifacts and test results, and confirm unchanged enriched-sales rows retain their previous `loaded_at`. |
-| 16.12. Verify failure safety | Not started | Cause a controlled failure on a disposable branch and confirm `prepare_watermarks` succeeds, `dbt_build` fails, `advance_watermarks` is skipped, and the control table remains unchanged. Repair the run afterward. |
-| 16.13. Add the production trigger | Not started | After manual success and failure validation, add the required schedule or data trigger, set the timezone explicitly, prevent overlapping runs, and configure notifications if available. Manual execution is sufficient during development. |
+| 16.10. Understand the watermark notebook code | Not started | Review `prepare_watermarks.py` and `advance_watermarks.py` line by line. Explain widget inputs, UTC timestamp handling, control-row validation, fixed start/end capture, task-value publication, stale-state and backward-window protection, the exact-end `MERGE`, post-update verification, and how the two notebooks prevent gaps or premature watermark advancement. Document questions and confirm the data flow before continuing. |
+| 16.11. Configure retry behavior | Not started | Add limited automatic retries to `dbt_build`. For manual recovery, use Repair run and rerun the failed dbt task plus downstream tasks without rerunning `prepare_watermarks`, preserving the original bounded window. |
+| 16.12. Verify a successful workflow run | Not started | Compare preparation task values with the control table after success, inspect dbt artifacts and test results, and confirm unchanged enriched-sales rows retain their previous `loaded_at`. |
+| 16.13. Verify failure safety | Not started | Cause a controlled failure on a disposable branch and confirm `prepare_watermarks` succeeds, `dbt_build` fails, `advance_watermarks` is skipped, and the control table remains unchanged. Repair the run afterward. |
+| 16.14. Add the production trigger | Not started | After manual success and failure validation, add the required schedule or data trigger, set the timezone explicitly, prevent overlapping runs, and configure notifications if available. Manual execution is sufficient during development. |
 
 Step 17 implementation progress — optional Python notebook dbt runner
 
