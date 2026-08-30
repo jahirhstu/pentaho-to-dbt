@@ -49,7 +49,7 @@ There is no frontend or end-user web application in this repository.
 
 **CONFIRMED IN DATABRICKS / CONVERSATION:** A Databricks job named `pentaho_project_1_incremental` exists with working `prepare_watermarks` and native `dbt_build` tasks. Verification run `721943511175993` completed both tasks successfully.
 
-**PLANNED / NOT IMPLEMENTED:** The workflow is not complete. The immediate next deliverable is Step 16.8, `advance_watermarks.py`, followed by its success-only job task, retry/failure validation, and a production trigger.
+**PLANNED / NOT IMPLEMENTED:** The workflow is not complete. Both watermark notebooks exist; the immediate next deliverable is Step 16.9, configuring `advance_watermarks` as a success-only job task, followed by retry/failure validation and a production trigger.
 
 ### Major implemented features
 
@@ -519,7 +519,7 @@ There are no TypeScript, component, API, UI styling, tenant, or role conventions
 ### Started but unfinished
 
 - `docs/steps.txt` contains detailed Step 16–18 plans.
-- Step 16.8 has been designed in conversation, but `advance_watermarks.py` does not exist yet.
+- Step 16.8 is implemented in `databricks/notebooks/advance_watermarks.py`; its Databricks task configuration remains Step 16.9.
 
 ### Not implemented
 
@@ -548,12 +548,11 @@ There are no TypeScript, component, API, UI styling, tenant, or role conventions
 
 ### High Priority
 
-1. **Implement Step 16.8:** add `databricks/notebooks/advance_watermarks.py`. It should accept pipeline plus captured start/end values, validate three existing control rows, reject malformed/backward/stale state, merge the exact three ends, and verify the result. It must not query source maxima.
-2. **Implement Step 16.9:** configure `advance_watermarks` after `dbt_build` with `ALL_SUCCESS`, passing the original task values from `prepare_watermarks`.
-3. **Complete Step 16.10:** review and understand both watermark notebooks line by line, including their shared data contract and safety checks.
-4. **Implement Step 16.11:** add limited dbt retries and document Repair run selection so preparation is not rerun during repair.
-5. **Verify Step 16.12:** run the complete workflow, compare task ends to committed control values, inspect dbt artifacts/tests, and prove unchanged enriched rows retain `loaded_at`.
-6. **Verify Step 16.13:** controlled failure on a disposable branch; confirm advancement is skipped and control values remain unchanged; repair with the original window.
+1. **Implement Step 16.9:** configure `advance_watermarks` after `dbt_build` with `ALL_SUCCESS`, passing the original task values from `prepare_watermarks`.
+2. **Complete Step 16.10:** review and understand both watermark notebooks line by line, including their shared data contract and safety checks.
+3. **Implement Step 16.11:** add limited dbt retries and document Repair run selection so preparation is not rerun during repair.
+4. **Verify Step 16.12:** run the complete workflow, compare task ends to committed control values, inspect dbt artifacts/tests, and prove unchanged enriched rows retain `loaded_at`.
+5. **Verify Step 16.13:** controlled failure on a disposable branch; confirm advancement is skipped and control values remain unchanged; repair with the original window.
 
 ### Medium Priority
 
@@ -744,22 +743,9 @@ No application/frontend environment variables exist.
 
 ## 17. Recommended Next Development Steps
 
-### Immediate next task: Step 16.8
+### Immediate next task: Step 16.9
 
-Create `databricks/notebooks/advance_watermarks.py` as a Databricks source-format Python notebook.
-
-Recommended contract:
-
-1. Accept `pipeline_name` and all six captured watermark values as widgets.
-2. Reject missing or invalid timestamps.
-3. Reject any end earlier than its corresponding start.
-4. Validate that exactly one control row exists for sales/customer/product.
-5. Confirm each current control value still equals the captured start (optimistic concurrency protection).
-6. Merge only the captured end values into existing rows; do not insert missing control rows.
-7. Do not query `MAX(source_updated_at)` or source tables.
-8. Read back and verify the three exact committed ends.
-9. Display an audit-friendly previous/advanced summary.
-10. Perform a no-op test using current values as both start and end, then commit and push.
+Configure `databricks/notebooks/advance_watermarks.py` as a Git-backed serverless notebook task after `dbt_build`. Set the dependency condition to `ALL_SUCCESS` and pass `pipeline_name` plus all six original dynamic task values from `prepare_watermarks`. Verify the task does not run after a failed dbt task before treating the three-task workflow as complete.
 
 ### Then continue in this order
 
@@ -769,7 +755,7 @@ Recommended contract:
 4. Step 16.12: validate a successful full run, including `loaded_at` preservation.
 5. Step 16.13: validate controlled failure and repair without advancement.
 6. Step 16.14: add production trigger, timezone, concurrency limit, and notifications.
-6. Only then evaluate Step 17 and implement Step 18.
+7. Only then evaluate Step 17 and implement Step 18.
 
 ## 18. Context That Exists Only in Our Conversation
 
@@ -784,7 +770,7 @@ The following details are not fully encoded in repository artifacts:
 - The currently working native job task required serverless environment version 2 and `--profiles-dir .`.
 - The successful validation job run ID was `721943511175993`.
 - Step 16.8 implementation guidance recommended accepting starts as well as ends for stale-state validation, although the step summary only says to merge the three exact ends.
-- The user wants to implement Step 16.8 personally; do not implement it unless explicitly asked in a later request.
+- The user implemented Step 16.8 and requested guidance, rather than automatic workspace changes, for Step 16.9.
 - Step 17 and Step 18 were added as planned future work at the user's request. Step 17 is an experiment, not a mandated replacement for the native task.
 
 ## 19. Instructions for the Next Codex Session

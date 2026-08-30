@@ -308,7 +308,7 @@ if incorrect_updates:
         f"Watermark advancement verification failed: {details}"
     )
 
-    # COMMAND ----------
+# COMMAND ----------
 
 display(
     verification.select(
