@@ -5,8 +5,8 @@ from datetime import datetime
 import json
 import os
 from pathlib import Path
-import shutil
 import subprocess
+import sys
 
 
 # COMMAND ----------
@@ -146,14 +146,6 @@ child_environment = build_dbt_environment()
 
 # COMMAND ----------
 
-dbt_executable = shutil.which("dbt")
-
-if dbt_executable is None:
-    raise RuntimeError(
-        "The dbt executable is unavailable; configure dbt-databricks "
-        "in Step 17.3"
-    )
-
 dbt_variables = parameters.copy()
 
 dbt_vars_json = json.dumps(
@@ -162,11 +154,42 @@ dbt_vars_json = json.dumps(
     sort_keys=True,
 )
 
+dbt_target_path = Path("/tmp/pentaho-to-dbt-target")
+dbt_log_path = Path("/tmp/pentaho-to-dbt-logs")
+
+dbt_target_path.mkdir(parents=True, exist_ok=True)
+dbt_log_path.mkdir(parents=True, exist_ok=True)
+
+version_check = subprocess.run(
+    [sys.executable, "-m", "dbt", "--version"],
+    cwd=project_root,
+    env=child_environment,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.STDOUT,
+    text=True,
+)
+
+print(version_check.stdout, end="", flush=True)
+
+if version_check.returncode != 0:
+    raise RuntimeError(
+        "Unable to start dbt through the active Python interpreter; "
+        f"exit code {version_check.returncode}"
+    )
+
 command = [
-    dbt_executable,
+    sys.executable,
+    "-m",
+    "dbt",
     "build",
+    "--project-dir",
+    str(project_root),
     "--profiles-dir",
     str(project_root),
+    "--target-path",
+    str(dbt_target_path),
+    "--log-path",
+    str(dbt_log_path),
     "--target",
     "job",
     "--select",
@@ -176,10 +199,12 @@ command = [
 ]
 
 print(f"dbt project root: {project_root}")
-print(f"dbt executable: {dbt_executable}")
+print(f"Python executable: {sys.executable}")
+print("dbt invocation: python -m dbt")
 print("dbt target: job")
 print("dbt selection: pentaho_project_1")
-print(f"dbt artifacts directory: {project_root / 'target'}")
+print(f"dbt artifacts directory: {dbt_target_path}")
+print(f"dbt logs directory: {dbt_log_path}")
 print("Fixed watermark window:")
 
 for parameter_name in parameter_names:
@@ -213,4 +238,5 @@ if return_code != 0:
     )
 
 print("dbt build completed successfully")
-print(f"Artifacts directory: {project_root / 'target'}")
+print(f"Artifacts directory: {dbt_target_path}")
+print(f"Logs directory: {dbt_log_path}")
