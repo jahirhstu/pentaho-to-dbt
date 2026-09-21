@@ -5,6 +5,7 @@ from datetime import datetime
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 
@@ -146,6 +147,18 @@ child_environment = build_dbt_environment()
 
 # COMMAND ----------
 
+dbt_executable = shutil.which(
+    "dbt",
+    path=child_environment.get("PATH"),
+)
+
+if dbt_executable is None:
+    raise RuntimeError(
+        "Could not find the dbt executable on PATH. Install "
+        "dbt-databricks in the notebook task environment."
+    )
+
+
 dbt_variables = parameters.copy()
 
 dbt_vars_json = json.dumps(
@@ -161,7 +174,7 @@ dbt_target_path.mkdir(parents=True, exist_ok=True)
 dbt_log_path.mkdir(parents=True, exist_ok=True)
 
 version_check = subprocess.run(
-    [sys.executable, "-m", "dbt", "--version"],
+    [dbt_executable, "--version"],
     cwd=project_root,
     env=child_environment,
     stdout=subprocess.PIPE,
@@ -173,14 +186,12 @@ print(version_check.stdout, end="", flush=True)
 
 if version_check.returncode != 0:
     raise RuntimeError(
-        "Unable to start dbt through the active Python interpreter; "
+        "Unable to start the dbt executable; "
         f"exit code {version_check.returncode}"
     )
 
 command = [
-    sys.executable,
-    "-m",
-    "dbt",
+    dbt_executable,
     "build",
     "--project-dir",
     str(project_root),
@@ -200,7 +211,7 @@ command = [
 
 print(f"dbt project root: {project_root}")
 print(f"Python executable: {sys.executable}")
-print("dbt invocation: python -m dbt")
+print(f"dbt executable: {dbt_executable}")
 print("dbt target: job")
 print("dbt selection: pentaho_project_1")
 print(f"dbt artifacts directory: {dbt_target_path}")
