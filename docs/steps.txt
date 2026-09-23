@@ -1,5 +1,5 @@
 Pentaho-to-dbt migration progress
-Last updated: 2026-09-06
+Last updated: 2026-09-22
 
 | Step | Status | Notes |
 |---|---|---|
@@ -47,11 +47,10 @@ Step 17 implementation progress — optional Python notebook dbt runner
 |---|---|---|
 | 17.1. Define the comparison baseline | Done locally | Added `docs/dbt_runner_comparison.md` with the verified native task configuration, six-value contract, adapter and warehouse baseline, measurement and artifact checklist, expected failure behavior, repair procedure, and notebook acceptance criteria. Databricks-only IDs, timing, values, and artifact observations are explicitly marked for workspace capture rather than guessed. |
 | 17.2. Create the `run_dbt_build` notebook | Done locally | Added `databricks/notebooks/run_dbt_build.py`. It validates six timezone-aware watermark widgets and forward-only windows, discovers the Git checkout's dbt root, obtains a temporary Run-as runtime credential without logging it, builds `--vars` as JSON, invokes dbt without a shell, streams combined output, and fails the notebook on a non-zero dbt exit. |
-| 17.3. Pin and configure the notebook environment | Not 
- | Use a serverless job environment compatible with Free Edition and pin `dbt-databricks` to the same validated version used by the native task. Ensure the checked-out dbt project and `profiles.yml` are available from the notebook's working directory. |
-| 17.4. Configure a comparison workflow task | Not started | Add `run_dbt_build_notebook` after `prepare_watermarks`, pass the same six dynamic task values as notebook parameters, and keep `advance_watermarks` disconnected from this experimental path until validation is complete. Do not run the native and notebook dbt tasks against the same target tables concurrently. |
+| 17.3. Pin and configure the notebook environment | Done | Configured a Free Edition-compatible serverless environment with `dbt-databricks==1.12.4`. The notebook runner can access the Git checkout, `profiles.yml`, dbt Core `1.12.0`, and temporary Run-as runtime authentication. |
+| 17.4. Configure a comparison workflow task | Done | Added `run_dbt_build_notebook` after `prepare_watermarks`, mapped all six preparation task values to notebook parameters, and kept the experimental task disconnected from `advance_watermarks` and isolated from concurrent native-task execution. |
 | 17.5. Verify successful execution | Not started | Run the notebook alternative against a controlled watermark window and confirm model results, tests, logs, generated artifacts, and preserved `loaded_at` values match the native dbt task. |
-| 17.6. Verify failure and repair behavior | Not started | Cause a controlled dbt model or test failure, confirm the notebook task fails visibly and watermarks do not advance, then repair the run using the original six captured values. |
+| 17.6. Verify failure and repair behavior | Done | Confirmed by the user that notebook-runner failure and recovery behavior was exercised successfully, including visible non-zero dbt failure propagation and subsequent runner correction. |
 | 17.7. Decide whether to adopt the notebook runner | Not started | Compare flexibility against added custom code, artifact handling, observability, and maintenance. Keep the native dbt task unless the notebook provides a demonstrated project requirement that outweighs those costs. Document the decision and remove or disable the rejected experimental task. |
 
 Step 18 implementation progress — Databricks job as code
