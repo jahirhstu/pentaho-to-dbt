@@ -1,0 +1,41 @@
+bundle:
+  name: pentaho_to_dbt
+
+include:
+  - resources/*.yml
+
+variables:
+  warehouse_id:
+    description: SQL warehouse used by the dbt task for this target.
+  pipeline_name:
+    description: Watermark-control pipeline name shared by both notebooks.
+  catalog:
+    description: Intended catalog for this target; the dbt job profile is still fixed to workspace.
+  target_schema:
+    description: Intended dbt base schema; the dbt job profile is still fixed to dbt_dev.
+  run_as_user:
+    description: Email of the workspace user who runs the development job.
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      # Local CLI authentication profile created in Step 18.1.
+      host: https://dbc-6a1c9cc6-e36f.cloud.databricks.com
+      profile: pentaho-dev
+    variables:
+      warehouse_id: 75e2e734a3527ecb
+      pipeline_name: pentaho_project_1
+      catalog: workspace
+      target_schema: dbt_dev
+      run_as_user: ${workspace.current_user.userName}
+    run_as:
+      user_name: ${var.run_as_user}
+
+  prod:
+    mode: production
+    # Placeholder only: no production workspace or variable values exist yet.
+    # A separate local profile prevents falling back to the dev profile.
+    workspace:
+      profile: pentaho-prod
