@@ -10,3 +10,4 @@ dbt_packages/
 *.duckdb
 
 dbt_internal_packages/
+.databricks/
