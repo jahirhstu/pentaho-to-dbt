@@ -1,0 +1,55 @@
+# Separate notebook-runner job. Do not run concurrently with version 1:
+# both versions use the same dbt tables and watermark control rows.
+resources:
+  jobs:
+    pentaho_project_1_incremental_v2:
+      name: pentaho_project_1_incremental_v2
+      max_concurrent_runs: 1
+
+      environments:
+        - environment_key: dbt_serverless
+          spec:
+            environment_version: "2"
+            dependencies:
+              - dbt-databricks==1.12.4
+
+      tasks:
+        - task_key: prepare_watermarks
+          notebook_task:
+            notebook_path: ../databricks/notebooks/prepare_watermarks.py
+            source: WORKSPACE
+            base_parameters:
+              pipeline_name: ${var.pipeline_name}
+
+        - task_key: dbt_build
+          depends_on:
+            - task_key: prepare_watermarks
+          run_if: ALL_SUCCESS
+          environment_key: dbt_serverless
+          notebook_task:
+            notebook_path: ../databricks/notebooks/run_dbt_build.py
+            source: WORKSPACE
+            base_parameters:
+              project_root: ${workspace.file_path}
+              sales_watermark_start: "{{tasks.prepare_watermarks.values.sales_watermark_start}}"
+              sales_watermark_end: "{{tasks.prepare_watermarks.values.sales_watermark_end}}"
+              customer_watermark_start: "{{tasks.prepare_watermarks.values.customer_watermark_start}}"
+              customer_watermark_end: "{{tasks.prepare_watermarks.values.customer_watermark_end}}"
+              product_watermark_start: "{{tasks.prepare_watermarks.values.product_watermark_start}}"
+              product_watermark_end: "{{tasks.prepare_watermarks.values.product_watermark_end}}"
+
+        - task_key: advance_watermarks
+          depends_on:
+            - task_key: dbt_build
+          run_if: ALL_SUCCESS
+          notebook_task:
+            notebook_path: ../databricks/notebooks/advance_watermarks.py
+            source: WORKSPACE
+            base_parameters:
+              pipeline_name: ${var.pipeline_name}
+              sales_watermark_start: "{{tasks.prepare_watermarks.values.sales_watermark_start}}"
+              sales_watermark_end: "{{tasks.prepare_watermarks.values.sales_watermark_end}}"
+              customer_watermark_start: "{{tasks.prepare_watermarks.values.customer_watermark_start}}"
+              customer_watermark_end: "{{tasks.prepare_watermarks.values.customer_watermark_end}}"
+              product_watermark_start: "{{tasks.prepare_watermarks.values.product_watermark_start}}"
+              product_watermark_end: "{{tasks.prepare_watermarks.values.product_watermark_end}}"

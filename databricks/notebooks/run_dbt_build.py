@@ -100,7 +100,23 @@ def find_project_root(start_directory: Path) -> Path:
     )
 
 
-project_root = find_project_root(Path.cwd().resolve())
+# Bundle jobs pass the deployed project directory explicitly. Existing Git
+# comparison tasks can omit this widget and retain parent-directory discovery.
+dbutils.widgets.text("project_root", "")
+configured_project_root = dbutils.widgets.get("project_root").strip()
+
+if configured_project_root:
+    project_root = Path(configured_project_root).resolve()
+    if not (
+        (project_root / "dbt_project.yml").is_file()
+        and (project_root / "profiles.yml").is_file()
+        and (project_root / "models").is_dir()
+    ):
+        raise RuntimeError(
+            f"Configured project_root is not a complete dbt project: {project_root}"
+        )
+else:
+    project_root = find_project_root(Path.cwd().resolve())
 
 
 # COMMAND ----------

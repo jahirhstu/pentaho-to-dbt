@@ -1,5 +1,5 @@
 Pentaho-to-dbt migration progress
-Last updated: 2026-09-22
+Last updated: 2026-10-05
 
 | Step | Status | Notes |
 |---|---|---|
@@ -20,7 +20,10 @@ Last updated: 2026-09-22
 | 15. Make enriched-sales merges selectively incremental | Done locally | Added source-specific bounded watermark windows and affected-sales selection for direct sales changes, lookup changes, and late-arriving customer/product recovery. Incremental execution requires six workflow-supplied watermark variables; unchanged sales are excluded so their `loaded_at` is preserved. |
 | 16. Orchestrate incremental execution with a Databricks Workflow | In progress | Implement the ordered substeps below. The three-task workflow, job-compatible profile, watermark control table, both watermark notebooks, and Git-backed `dbt_build` task are complete; code review, retry behavior, validation, and the production trigger remain. |
 | 17. Evaluate a Python notebook as the dbt runner | In progress | Defined the native-task comparison contract and workspace evidence checklist. Keep the native `dbt_build` task as the working baseline until the optional notebook passes equivalent success, failure, artifact, security, and repair validation. |
-| 18. Store the complete Databricks job as code | Not started | Move the validated workflow definition into version-controlled Databricks Declarative Automation Bundles, including tasks, dependencies, environments, parameters, permissions, and deployment targets. |
+| 18. Store the complete Databricks job as code | In progress | The bundle and development workflow definition are in code, and development validation was confirmed. Deployment, execution checks, promotion, and cutover remain. |
+| 19. Automate source-data ingestion with Kafka | Not started | Replace future manually inserted source snapshots with synthetic events from a Python/Faker producer, Kafka topics, and a consumer that performs basic cleanup and writes to the existing Databricks source tables. Start with sales, customer, and product; keep region and store as seeded lookups until their streaming behavior is designed. |
+| 20. Add centralized logging and end-to-end monitoring | Not started | Bring producer, Kafka, consumer, Databricks ingestion, job/pipeline, dbt transformation, mart, and reporting telemetry into one place so failures can be traced across the entire data flow. Choose the monitoring platform and detailed implementation later. |
+| 21. Add a reporting layer over Databricks marts | Not started | Select a reporting tool later, connect it to the Databricks mart tables, and build reports that expose the transformed data. Include report refresh and query failures in centralized monitoring. |
 
 Step 16 implementation progress
 
@@ -61,8 +64,41 @@ Step 18 implementation progress — Databricks job as code
 | 18.2. Initialize a Databricks bundle | Done locally | Added root `databricks.yml` with development and production targets and an included resource file for `pentaho_project_1_incremental`. The job tasks and environment-specific settings follow in Steps 18.3 and 18.4; full bundle validation follows in Step 18.5. |
 | 18.3. Import or recreate the validated workflow | Done locally | Added bundle-managed `prepare_watermarks`, native `dbt_build`, and `advance_watermarks` tasks with `ALL_SUCCESS` dependencies, the six fixed task-value references, the pinned serverless dbt environment, and workspace-synced source paths. Runtime equivalence and deployment remain for Steps 18.5–18.7. |
 | 18.4. Parameterize environment-specific settings | Development parameterization complete; production pending | Declared target variables for catalog, base schema, warehouse ID, pipeline name, and Run-as user. Wired the development warehouse, pipeline, and deployer identity into the job; `prod` has a separate unconfigured profile and no target values. The dbt profile and notebooks still fix catalog/schema/source/control paths, so production requires environment-aware code and a separate workspace decision. Trigger and notifications await Step 16.10. |
-| 18.5. Validate the bundle locally | Not started | Run bundle schema validation for each target, inspect the rendered job configuration, and confirm task names and dynamic value references exactly match the notebook and dbt contracts. |
-| 18.6. Deploy to a development target | Not started | Deploy under a development-specific job name or namespace so the existing working job is not overwritten during initial validation. Record the deployed job ID and resolved configuration. |
+| 18.5. Validate the bundle locally | Done for development (user confirmed) | The user confirmed successful `dev` bundle validation in Ubuntu. The `prod` target remains an unconfigured placeholder and has not been validated. The CLI output and resolved job configuration have not been captured in this repository. |
+| 18.6. Deploy to a development target | Not started | Deploy under a development-specific job name or namespace so the existing working job is not overwritten during initial validation. Record the manual and new job IDs, deployed job URL, workspace bundle path, source revision, and resolved configuration. Do not run the job until Step 18.7. |
 | 18.7. Run and verify the deployed job | Not started | Execute the development bundle job, confirm the full watermark workflow succeeds, inspect dbt results and tests, and repeat the failure-safety and repair checks. |
 | 18.8. Define the promotion process | Not started | Document review, validation, deployment, rollback, and version-pinning rules for promoting a tested bundle revision from development to production. Prefer an immutable Git tag or commit for production deployment. |
 | 18.9. Cut over from the manually configured job | Not started | After equivalent behavior is proven, disable the manual job trigger, enable the bundle-managed job trigger, prevent overlapping runs, and retain the old job temporarily for rollback before eventual removal. |
+| 18.10. Convert the dbt workflow task to a notebook task | Done locally; Databricks verification pending | Added separate `resources/pentaho_project_1_incremental_v2.yml`, leaving version 1 unchanged. Version 2 preserves the `dbt_build` key, pinned environment, six watermark mappings, and `ALL_SUCCESS` dependencies, with an explicit deployed project-root parameter. Six offline runner tests pass. See `docs/notebook_runner_v2.md` for validation, deployment, success/failure/repair checks, and comparison-task disablement. No deployment or workspace execution was performed; verify Step 17 adoption and prevent overlapping jobs before enabling regular runs. |
+
+Step 19 implementation progress — Kafka source-data ingestion
+
+| Substep | Status | Notes |
+|---|---|---|
+| 19.1. Define the streaming scope and contracts | Not started | Document event schemas and keys for sales, customer, and product; map each event to `workspace.dim.sales_source`, `workspace.dim.dim_customer_source`, or `workspace.dim.dim_product_source`. Preserve the source columns and `source_updated_at` semantics expected by dbt and the watermark workflow. Decide how existing seeded region/store rows are referenced. |
+| 19.2. Set up a development Kafka environment | Not started | Choose and configure a Kafka broker for development, create source topics with an appropriate partition and retention plan, and keep broker credentials and connection settings out of Git. Verify the producer and consumer can connect. |
+| 19.3. Create the Python synthetic-data producer project | Not started | Add a separate Python project using Faker to generate coherent customer, product, and sales events with stable IDs, valid lookup references, realistic timestamps, and repeatable test scenarios. Publish events to Kafka; design for multiple producer instances and do not write directly to Databricks. |
+| 19.4. Build the Kafka consumer and basic transformation | Not started | Consume the topics, validate and normalize types and timestamps, apply basic source-level cleanup, and route malformed events for inspection. Support multiple consumer instances in a consumer group without treating Kafka delivery as exactly once. |
+| 19.5. Write events into Databricks source tables | Not started | Map valid events to the existing `workspace.dim` source tables using repeatable upserts keyed by source ID and `source_updated_at`. Acknowledge Kafka offsets only after a durable write so retries do not lose data or create duplicate source rows. Handle out-of-order updates without replacing a newer source version. |
+| 19.6. Integrate ingestion with the dbt watermark workflow | Not started | Verify that new source timestamps are visible to `prepare_watermarks`, that dbt processes the captured windows, and that `advance_watermarks` runs only after a successful build. Decide whether ingestion and dbt share a schedule or use separate triggers; prevent a source update from being skipped across captured windows. |
+| 19.7. Test scaling, recovery, and data quality | Not started | Exercise multiple producers and consumers, duplicate delivery, consumer restart, malformed events, missing customer/product recovery, and late or out-of-order updates. Compare resulting source and dbt rows with expected counts and aggregates; document replay and troubleshooting steps. |
+| 19.8. Document the development-to-production path | Not started | Record broker/topic configuration, deployment and monitoring approach, credential handling, retention, replay, and rollout steps. Keep the original SQL seed scripts as controlled baseline fixtures rather than the ongoing ingestion mechanism. |
+
+Step 20 implementation progress — centralized logging and monitoring
+
+| Substep | Status | Notes |
+|---|---|---|
+| 20.1. Define monitoring coverage and shared trace identifiers | Not started | Define how events, ingestion batches, Kafka topic/partition/offset positions, Databricks runs, dbt results, and report refreshes are linked. Cover the full producer-to-report flow, including multiple producers and consumers. |
+| 20.2. Choose the central monitoring platform | Not started | Evaluate a shared destination and interface for searchable logs, metrics, and trace links. Decide retention, access, and deployment requirements later. |
+| 20.3. Collect telemetry from every layer | Not started | Add consistent structured logging to producers and consumers and collect Kafka health, Databricks ingestion/job/pipeline results, dbt model/test outcomes, mart freshness, and reporting refresh/query status. Exclude credentials and sensitive payloads. |
+| 20.4. Add operational views and alerts | Not started | Provide one place to follow a data event or batch through the system and investigate failures. Define alerts for failed writes, consumer lag, job/test failures, and stale marts or reports after requirements are agreed. |
+| 20.5. Verify failure tracing and document recovery | Not started | Exercise representative failures at each layer and confirm their origin and downstream impact can be found centrally. Document troubleshooting, replay, and recovery procedures. |
+
+Step 21 implementation progress — reporting from Databricks marts
+
+| Substep | Status | Notes |
+|---|---|---|
+| 21.1. Define reporting requirements | Not started | Identify report users, measures, filters, mart tables, freshness expectations, and access needs. |
+| 21.2. Select the reporting tool | Not started | Compare tools that can query the Databricks mart tables and choose one based on the agreed requirements. The tool choice is intentionally deferred. |
+| 21.3. Connect and build the initial reports | Not started | Configure secure Databricks access and create reports from the customer and product sales marts. Set refresh or query behavior appropriate to the chosen tool. |
+| 21.4. Validate report results and monitoring | Not started | Compare report totals and filters with mart queries, verify access and freshness, and send refresh/query failures to the Step 20 monitoring platform. |
