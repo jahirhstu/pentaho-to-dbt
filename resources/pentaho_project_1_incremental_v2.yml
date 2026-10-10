@@ -6,6 +6,12 @@ resources:
       name: pentaho_project_1_incremental_v2
       max_concurrent_runs: 1
 
+      schedule:
+        quartz_cron_expression: "0 0 * * * ?" # Hourly
+        timezone_id: UTC
+        # Enable only after version 2 verification and disabling competing jobs.
+        pause_status: PAUSED
+
       environments:
         - environment_key: dbt_serverless
           spec:

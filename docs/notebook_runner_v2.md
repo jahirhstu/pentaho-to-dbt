@@ -69,3 +69,76 @@ cross-job locking. Keep version 2 manual until verification is complete.
    experimental comparison task. Keep version 1 available for rollback.
 
 Record job/run IDs, results, and the adoption decision in `docs/steps.txt`.
+
+## Step 18.11: hourly scheduling through job as code
+
+Version 2 has a job-specific Quartz schedule configured directly in
+`resources/pentaho_project_1_incremental_v2.yml`: `0 0 * * * ?` (every hour at
+minute/second zero), timezone `UTC`, and pause status `PAUSED`. No root scheduling
+variables are required. Version 1 has no schedule; production remains
+unconfigured. UTC avoids daylight saving changes. Quartz uses six fields here,
+not the five-field Linux cron format.
+
+### Validate and deploy paused
+
+From the exact updated checkout in Ubuntu:
+
+```bash
+databricks bundle validate -t dev
+databricks bundle validate -t dev --output json
+```
+
+Inspect `resources.jobs.pentaho_project_1_incremental_v2.schedule` and confirm:
+
+```json
+{
+  "quartz_cron_expression": "0 0 * * * ?",
+  "timezone_id": "UTC",
+  "pause_status": "PAUSED"
+}
+```
+
+Confirm version 1 remains unscheduled, the three tasks and dependencies remain
+intact, and version 2 still has `max_concurrent_runs: 1`. Then deploy:
+
+```bash
+databricks bundle deploy -t dev
+databricks bundle summary -t dev
+```
+
+Deployment applies all included bundle resources. Open version 2's URL from
+the summary, record its ID, and confirm the schedule is hourly, UTC, and paused.
+This does not start a scheduled run.
+
+### Enable only when ready
+
+Complete version 2's workspace acceptance checks above. Disable competing manual
+and version 1 triggers and the experimental comparison task; confirm no competing
+run is active. All these jobs share tables and watermark rows.
+
+Change only the version 2 job's `schedule.pause_status` to `UNPAUSED` in
+`resources/pentaho_project_1_incremental_v2.yml`, then repeat validation,
+deployment, and summary commands using `-t dev`. Check
+the enabled schedule and next run in the UI. An explicit resource schedule status
+can override development mode's default pause behavior. Keep the intended setting
+in code rather than changing only the UI. Version 1 remains available for rollback
+but must not run concurrently.
+
+After the first scheduled run, verify all three tasks succeed, dbt tests pass,
+watermarks match the captured ends, and no competing workflow ran. Record the job
+ID, scheduled run ID, schedule, timezone, and results in `docs/steps.txt`; only then
+mark 18.11 fully Done. Notifications and production scheduling are not configured.
+
+### Pause again
+
+Set the same job-specific `schedule.pause_status` back to `PAUSED`, validate,
+and redeploy to `dev`.
+Pausing prevents future scheduled launches; it does not cancel a running job.
+
+These job-level settings apply to every target that includes the resource unless
+overridden. Before adding another operational environment, define its intended
+pause policy using target overrides; an explicit job-level `UNPAUSED` setting
+takes precedence over shared pause presets. Production is not ready for use.
+
+References: [scheduled bundle examples](https://docs.databricks.com/aws/en/dev-tools/bundles/examples)
+and [deployment-mode pause behavior](https://docs.databricks.com/aws/en/dev-tools/bundles/deployment-modes).
