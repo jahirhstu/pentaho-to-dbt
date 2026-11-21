@@ -1,0 +1,20 @@
+{
+  "scenario_id": "baseline-001",
+  "scenario_type": "baseline",
+  "producer_id": "dev-producer-01",
+  "seed": 1907,
+  "locale": "en_US",
+  "references_file": "config/references.example.json",
+  "allocation_file": "config/allocations.example.json",
+  "counts": {"customer": 2, "product": 2, "sales": 5},
+  "bounds": {
+    "customer": {"committed_watermark": "2026-11-20T00:00:00.000000Z", "source_maximum": "2026-11-20T00:00:00.000000Z"},
+    "product": {"committed_watermark": "2026-11-20T00:00:00.000000Z", "source_maximum": "2026-11-20T00:00:00.000000Z"},
+    "sales": {"committed_watermark": "2026-11-20T00:00:00.000000Z", "source_maximum": "2026-11-20T00:00:00.000000Z"}
+  },
+  "mutation_base": "2026-11-20T12:00:00.000000Z",
+  "produced_at": "2026-11-20T12:30:00.000000Z",
+  "mutation_date": "2026-11-20T12:30:00.000000Z",
+  "sales_date": "2026-11-20",
+  "allow_negative_fixture": false
+}

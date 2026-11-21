@@ -11,3 +11,9 @@ dbt_packages/
 
 dbt_internal_packages/
 .databricks/
+
+# Streaming producer
+streaming/producer/runs/
+streaming/producer/**/*.egg-info/
+streaming/producer/**/__pycache__/
+streaming/producer/.pytest_cache/

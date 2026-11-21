@@ -1,0 +1,10 @@
+{
+  "regions": [
+    {"region_id": 10, "region_code": "CA-EAST", "region_name": "Canada East"},
+    {"region_id": 20, "region_code": "CA-WEST", "region_name": "Canada West"}
+  ],
+  "stores": [
+    {"store_id": 101, "store_code": "STORE-101", "region_id": 10, "is_active": true},
+    {"store_id": 102, "store_code": "STORE-102", "region_id": 20, "is_active": true}
+  ]
+}

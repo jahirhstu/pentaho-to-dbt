@@ -1,0 +1,6 @@
+{
+  "producer_id": "dev-producer-01",
+  "customer": {"start": 100001, "end": 109999},
+  "product": {"start": 200001, "end": 209999},
+  "sales": {"start": 500001, "end": 509999}
+}
